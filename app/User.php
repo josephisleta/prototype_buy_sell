@@ -3,6 +3,7 @@
 namespace App;
 
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 
 class User extends Authenticatable
@@ -63,6 +64,31 @@ class User extends Authenticatable
     {
         return $this->hasMany('App\Payment');
     }
+    
+    public function item_views()
+    {
+        return $this->hasMany('App\ItemView');
+    }
+    
+    public function follows()
+    {
+        return $this->hasMany('App\Follow', 'follower_user_id', 'id');
+    }
+
+    public function followers()
+    {
+        return $this->hasMany('App\Follow', 'following_user_id', 'id');
+    }
+    
+    public function purchase_ratings()
+    {
+        return $this->hasMany('App\PurchaseRating');
+    }
+    
+    public function debits()
+    {
+        return $this->hasMany('App\UserDebit');
+    }
 
     public function getFullNameAttribute()
     {
@@ -89,5 +115,43 @@ class User extends Authenticatable
     public function getNotificationsAttribute()
     {
         return Notification::where('user_ids', 'like', "%{$this->id},%")->orderBy('created_at', 'desc')->get();
+    }
+
+    public function getAvatarAttribute()
+    {
+        if ($this->attributes['avatar']) {
+            return URL::to("/images/users/{$this->user->avatar}");
+        }
+
+        return URL::to('/images/default_user.png');
+    }
+    
+    public function getRatings($type)
+    {
+        $ratings = collect();
+        
+        foreach ($this->items as $item) {
+            if (!$item->purchase_rating) continue;
+            if ($item->purchase_rating->rating == $type) $ratings[] = $item->purchase_rating;
+        }
+        
+        return $ratings;
+    }
+    
+    public function getReturn()
+    {
+        return [
+            'id'            => $this->id,
+            'username'      => $this->username,
+            'firstname'     => $this->firstname,
+            'lastname'      => $this->lastname,
+            'email'         => $this->email,
+            'gender'        => $this->gender,
+            'location'      => $this->location,
+            'contact'       => $this->contact,
+            'avatar'        => $this->avatar,
+            'birthdate'     => $this->birthdate,
+            'notifications' => $this->notifications
+        ];
     }
 }

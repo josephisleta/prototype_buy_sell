@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 # General
+use App\ItemView;
 use App\Notification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -38,20 +39,22 @@ class ItemController extends Controller
         if (!$item) return response()->json([
             'success' => false,
             'error' => ['Item does not exist.'],
-            'user' => $this->user
+            'user' => $this->user->getReturn()
         ]);
+        
+        $this->user->item_views()->create(['item_id' => $item->id]);
         
         $item['likes'] = $item->likes;
         $item['comments'] = $item->comments;
 
-        $user = $this->user;
-        $user['notifications'] = $this->user->notifications;
+        $is_buyer = $this->user->purchases()->where('item_id', $item->id)->exists();
 
         $data = [
             'success' => true,
+            'is_buyer' => $is_buyer,
             'item' => $item,
             'error' => [],
-            'user' => $user
+            'user' => $this->user->getReturn()
         ];
 
         return response()->json($data);
@@ -59,16 +62,13 @@ class ItemController extends Controller
     
     public function viewAdd()
     {
-        $user = $this->user;
-        $user['notifications'] = $this->user->notifications;
-        
         $data = [
             'success' => true,
             'conditions' => config('constant.ITEM_CONDITIONS'),
             'categories' => config('constant.ITEM_CATEGORIES'),
             'brands' => Brand::all()->pluck('name', 'id'),
             'error' => [],
-            'user' => $user
+            'user' => $this->user->getReturn()
         ];
 
         return response()->json($data);
@@ -105,14 +105,21 @@ class ItemController extends Controller
 
         $item = Item::create($request);
 
-        $user = $this->user;
-        $user['notifications'] = $this->user->notifications;
+        if ($this->user->followers->count() >= 1) {
+            Notification::createNotif([
+                'message'  => "{$this->user->username} added a new item '{$item->name}'.",
+                'user_ids' => implode(',', $this->user->followers->keyBy('follower_user_id')->keys()->toArray()) . ',',
+                'link'     => route('item_view', ['item_id' => $item->id]),
+                'trigger'  => config('constant.NOTIFICATION_TRIGGER.user'),
+                'user_id'  => $this->user->id
+            ]);
+        }
 
         $data = [
             'success' => true,
             'item' => $item,
             'error' => [],
-            'user' => $user
+            'user' => $this->user->getReturn()
         ];
 
         return response()->json($data);
@@ -125,14 +132,14 @@ class ItemController extends Controller
         if (!$item) return response()->json([
             'success' => false,
             'error' => ['Item does not exist.'],
-            'user' => $this->user
+            'user' => $this->user->getReturn()
         ]);
 
         if ($item->user_id == $this->user->id) {
             return response()->json([
                 'success' => false,
                 'error' => ['Cannot like your own item.'],
-                'user' => $this->user
+                'user' => $this->user->getReturn()
             ]);
         }
 
@@ -140,7 +147,7 @@ class ItemController extends Controller
             return response()->json([
                 'success' => false,
                 'error' => ['Already liked this item.'],
-                'user' => $this->user
+                'user' => $this->user->getReturn()
             ]);
         }
 
@@ -157,14 +164,11 @@ class ItemController extends Controller
         $item['likes'] = $item->likes;
         $item['comments'] = $item->comments;
 
-        $user = $this->user;
-        $user['notifications'] = $this->user->notifications;
-
         $data = [
             'success' => true,
             'item' => $item,
             'error' => [],
-            'user' => $user
+            'user' => $this->user->getReturn()
         ];
 
         return response()->json($data);
@@ -177,7 +181,13 @@ class ItemController extends Controller
         if (!$item) return response()->json([
             'success' => false,
             'error' => ['Item does not exist.'],
-            'user' => $this->user
+            'user' => $this->user->getReturn()
+        ]);
+
+        if (!$this->request->body) return response()->json([
+            'success' => false,
+            'error' => ['Body is required.'],
+            'user' => $this->user->getReturn()
         ]);
 
         $request = [
@@ -200,14 +210,11 @@ class ItemController extends Controller
         $item['likes'] = $item->likes;
         $item['comments'] = $item->comments;
 
-        $user = $this->user;
-        $user['notifications'] = $this->user->notifications;
-
         $data = [
             'success' => true,
             'item' => $item,
             'error' => [],
-            'user' => $user
+            'user' => $this->user->getReturn()
         ];
 
         return response()->json($data);
@@ -220,14 +227,14 @@ class ItemController extends Controller
         if (!$item) return response()->json([
             'success' => false,
             'error' => ['Item does not exist.'],
-            'user' => $this->user
+            'user' => $this->user->getReturn()
         ]);
 
         if ($item->user_id != $this->user->id) {
             return response()->json([
                 'success' => false,
                 'error' => ['Cannot delete this item because it does not belong to the user.'],
-                'user' => $this->user
+                'user' => $this->user->getReturn()
             ]);
         }
 
@@ -248,9 +255,6 @@ class ItemController extends Controller
         }
 
         $error = [];
-
-        $user = $this->user;
-        $user['notifications'] = $this->user->notifications;
         
         $data = [
             'success' => true,
@@ -258,7 +262,7 @@ class ItemController extends Controller
             'item_count' => $items->count(),
             'items' => $items,
             'error' => $error,
-            'user' => $user
+            'user' => $this->user->getReturn()
         ];
         
         return response()->json($data);
@@ -271,7 +275,7 @@ class ItemController extends Controller
         if (!$category) return response()->json([
             'success' => false,
             'error' => ['Category does not exist.'],
-            'user' => $this->user
+            'user' => $this->user->getReturn()
         ]);
 
         $items = Item::where('category_id', $category->id)->get();
@@ -283,16 +287,13 @@ class ItemController extends Controller
 
         $error = [];
 
-        $user = $this->user;
-        $user['notifications'] = $this->user->notifications;
-
         $data = [
             'success' => true,
             'category' => $category->name,
             'item_count' => $items->count(),
             'items' => $items,
             'error' => $error,
-            'user' => $user
+            'user' => $this->user->getReturn()
         ];
 
         return response()->json($data);
@@ -311,7 +312,7 @@ class ItemController extends Controller
             $data = [
                 'success' => false,
                 'error' => $validator->errors()->all(),
-                'user' => $this->user
+                'user' => $this->user->getReturn()
             ];
 
             return response()->json($data);
@@ -323,7 +324,17 @@ class ItemController extends Controller
             $data = [
                 'success' => false,
                 'error' => ['Item does not exist.'],
-                'user' => $this->user
+                'user' => $this->user->getReturn()
+            ];
+
+            return response()->json($data);
+        }
+
+        if ($item->user->id == $this->user->id) {
+            $data = [
+                'success' => false,
+                'error' => ['Cannot buy your own item.'],
+                'user' => $this->user->getReturn()
             ];
 
             return response()->json($data);
@@ -333,7 +344,7 @@ class ItemController extends Controller
             $data = [
                 'success' => false,
                 'error' => ['Item is not available.'],
-                'user' => $this->user
+                'user' => $this->user->getReturn()
             ];
 
             return response()->json($data);
@@ -356,6 +367,14 @@ class ItemController extends Controller
 
         $item->update(['status' => config('constant.ITEM_STATUS.pending')]);
 
+        Notification::createNotif([
+            'message'  => "{$this->user->fullname} bought your item '{$item->name}'. Shipping address: {$this->request->shipping_address}",
+            'user_ids' => $item->user->id . ",",
+            'link'     => route('item_view', ['item_id' => $item->id]),
+            'trigger'  => config('constant.NOTIFICATION_TRIGGER.user'),
+            'user_id'  => $this->user->id
+        ]);
+
         $item['likes'] = $item->likes;
         $item['comments'] = $item->comments;
 
@@ -363,7 +382,96 @@ class ItemController extends Controller
             'success' => true,
             'item' => $item,
             'error' => [],
-            'user' => $this->user
+            'user' => $this->user->getReturn()
+        ];
+
+        return response()->json($data);
+    }
+
+    public function ratePurchase()
+    {
+        $error = [];
+        
+        if (!$this->request->item_id) $error[] = 'Item id is required';
+        if (!$this->request->rating) $error[] = 'Rating is required';
+        
+        if ($error) {
+            $data = [
+                'success' => false,
+                'error' => $error,
+                'user' => $this->user->getReturn()
+            ];
+
+            return response()->json($data);
+        }
+        
+        $item = Item::find($this->request->item_id);
+
+        if (!$item) {
+            $data = [
+                'success' => false,
+                'error' => ['Item does not exist.'],
+                'user' => $this->user->getReturn()
+            ];
+
+            return response()->json($data);
+        }
+
+        $is_buyer = $this->user->purchases()->where('item_id', $item->id)->exists();
+
+        if (!$is_buyer) {
+            $data = [
+                'success' => false,
+                'error' => ['You cannot rate this item. You are not the item buyer.'],
+                'user' => $this->user->getReturn()
+            ];
+
+            return response()->json($data);
+        }
+
+        $purchase = $this->user->purchases()->where('item_id', $item->id)->first();
+
+        if ($purchase->status == config('constant.PURCHASE_STATUS.complete')) {
+            $data = [
+                'success' => false,
+                'error' => ['Cannot rate. Purchase has already been completed.'],
+                'user' => $this->user->getReturn()
+            ];
+
+            return response()->json($data);
+        }
+
+        $this->user->purchase_ratings()->create([
+            'item_id' => $item->id,
+            'rating' => $this->request->rating,
+            'message' => isset($this->request->message) ? $this->request->message : null
+        ]);
+
+        $purchase->update(['status' => config('constant.PURCHASE_STATUS.complete')]);
+        $item->update(['status' => config('constant.ITEM_STATUS.sold')]);
+
+        Notification::createNotif([
+            'message'  => "{$this->user->fullname} has rated the purchase on your item '{$item->name}'",
+            'user_ids' => $item->user->id . ",",
+            'link'     => route('item_view', ['item_id' => $item->id]),
+            'trigger'  => config('constant.NOTIFICATION_TRIGGER.user'),
+            'user_id'  => $this->user->id
+        ]);
+
+        $item->user->debits()->create([
+            'amount' => $item->price,
+            'type' => '',
+            'item_id' => $item->id
+        ]);
+
+        $item['likes'] = $item->likes;
+        $item['comments'] = $item->comments;
+
+        $data = [
+            'success' => true,
+            'item' => $item,
+            'error' => [],
+            'user' => $this->user->getReturn()
         ];
 
         return response()->json($data);

@@ -3,6 +3,7 @@
 namespace App;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\URL;
 
 class Item extends Model
 {
@@ -42,10 +43,20 @@ class Item extends Model
     {
         return $this->hasMany('App\Like');
     }
+    
+    public function views()
+    {
+        return $this->hasMany('App\ItemView');
+    }
 
     public function comments()
     {
         return $this->hasMany('App\Comment');
+    }
+    
+    public function purchase_rating()
+    {
+        return $this->hasOne('App\PurchaseRating');
     }
 
     public function getLikeCountAttribute()
@@ -61,6 +72,20 @@ class Item extends Model
     public function getUserDataAttribute()
     {
         return $this->user()->get();
+    }
+    
+    public function getPicturesAttribute()
+    {
+        if ($this->attributes['pictures']) {
+            $pictures = [];
+            foreach (unserialize($this->attributes['pictures']) as $picture) {
+                $pictures[] = URL::to("/images/{$picture}");
+            }
+
+            return $pictures;
+        }
+
+        return [URL::to('/images/default_item.jpg')];
     }
     
     public function isAvailable()

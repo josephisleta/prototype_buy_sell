@@ -40,4 +40,10 @@ return [
         'complete' => 2
     ],
     
+    'PURCHASE_RATING' => [
+        'great' => 3,
+        'good' => 2,
+        'poor' => 1
+    ],
+    
 ];

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 # General
+use App\Condition;
 use App\ItemView;
 use App\Notification;
 use Illuminate\Http\Request;
@@ -43,16 +44,13 @@ class ItemController extends Controller
         ]);
         
         $this->user->item_views()->create(['item_id' => $item->id]);
-        
-        $item['likes'] = $item->likes;
-        $item['comments'] = $item->comments;
 
         $is_buyer = $this->user->purchases()->where('item_id', $item->id)->exists();
 
         $data = [
             'success' => true,
             'is_buyer' => $is_buyer,
-            'item' => $item,
+            'item' => $item->getReturn(),
             'error' => [],
             'user' => $this->user->getReturn()
         ];
@@ -64,9 +62,9 @@ class ItemController extends Controller
     {
         $data = [
             'success' => true,
-            'conditions' => config('constant.ITEM_CONDITIONS'),
-            'categories' => config('constant.ITEM_CATEGORIES'),
-            'brands' => Brand::all()->pluck('name', 'id'),
+            'conditions' => Condition::all(),
+            'categories' => Category::all(),
+            'brands' => Brand::all(),
             'error' => [],
             'user' => $this->user->getReturn()
         ];
@@ -78,15 +76,20 @@ class ItemController extends Controller
     {
         $error = [];
 
-        if (!$this->request->category_id) $error[] = 'Category is required.';
         if (!$this->request->name) $error[] = 'Name is required.';
         if (!$this->request->description) $error[] = 'Description is required.';
         if (!$this->request->price) $error[] = 'Price is required.';
-        if (!$this->request->condition) $error[] = 'Condition is required.';
+        if (!$this->request->category_id) $error[] = 'Category id is required.';
+        if (!$this->request->condition_id) $error[] = 'Condition id is required.';
+
+        if ($this->request->category_id && !Category::where('id', $this->request->category_id)->exists()) $error[] = 'Category id is not valid.';
+        if ($this->request->condition_id && !Condition::where('id', $this->request->condition_id)->exists()) $error[] = 'Condition id is not valid.';
+        if ($this->request->brand_id && !Brand::where('id', $this->request->brand_id)->exists()) $error[] = 'Brand id is not valid.';
 
         if ($error) return response()->json([
             'success' => false,
-            'error' => $error
+            'error' => $error,
+            'user' => $this->user->getReturn()
         ]);
 
         $request = [
@@ -96,7 +99,7 @@ class ItemController extends Controller
             'name' => $this->request->name,
             'description' => $this->request->description,
             'price' => $this->request->price,
-            'condition' => $this->request->condition,
+            'condition' => $this->request->condition_id,
             'size' => isset($this->request->size) ? $this->request->size : null,
             'shipping_fee' => isset($this->request->shipping_fee) ? $this->request->shipping_fee : 0,
             'ships_from' => isset($this->request->ships_from) ? $this->request->ships_from : '',
@@ -117,7 +120,7 @@ class ItemController extends Controller
 
         $data = [
             'success' => true,
-            'item' => $item,
+            'item' => $item->getReturn(),
             'error' => [],
             'user' => $this->user->getReturn()
         ];
@@ -161,12 +164,9 @@ class ItemController extends Controller
             'user_id'  => $this->user->id
         ]);
         
-        $item['likes'] = $item->likes;
-        $item['comments'] = $item->comments;
-
         $data = [
             'success' => true,
-            'item' => $item,
+            'item' => $item->getReturn(),
             'error' => [],
             'user' => $this->user->getReturn()
         ];
@@ -207,12 +207,9 @@ class ItemController extends Controller
             ]);
         }
         
-        $item['likes'] = $item->likes;
-        $item['comments'] = $item->comments;
-
         $data = [
             'success' => true,
-            'item' => $item,
+            'item' => $item->getReturn(),
             'error' => [],
             'user' => $this->user->getReturn()
         ];
@@ -247,11 +244,10 @@ class ItemController extends Controller
     {
         $keyword = $this->request->keyword;
 
-        $items = Item::where('name', 'like', "%$keyword%")->orWhere('description', 'like', "%$keyword%")->get();
+        $items = collect();
 
-        foreach ($items as $item) {
-            $item['likes'] = $item->likes;
-            $item['comments'] = $item->comments;
+        foreach (Item::where('name', 'like', "%$keyword%")->orWhere('description', 'like', "%$keyword%")->get() as $item) {
+            $items[] = $item->getReturn();
         }
 
         $error = [];
@@ -278,11 +274,9 @@ class ItemController extends Controller
             'user' => $this->user->getReturn()
         ]);
 
-        $items = Item::where('category_id', $category->id)->get();
-
-        foreach ($items as $item) {
-            $item['likes'] = $item->likes;
-            $item['comments'] = $item->comments;
+        $items = collect();
+        foreach (Item::where('category_id', $category->id)->get() as $item) {
+            $items[] = $item->getReturn();
         }
 
         $error = [];
@@ -375,12 +369,9 @@ class ItemController extends Controller
             'user_id'  => $this->user->id
         ]);
 
-        $item['likes'] = $item->likes;
-        $item['comments'] = $item->comments;
-
         $data = [
             'success' => true,
-            'item' => $item,
+            'item' => $item->getReturn(),
             'error' => [],
             'user' => $this->user->getReturn()
         ];
@@ -464,12 +455,9 @@ class ItemController extends Controller
             'item_id' => $item->id
         ]);
 
-        $item['likes'] = $item->likes;
-        $item['comments'] = $item->comments;
-
         $data = [
             'success' => true,
-            'item' => $item,
+            'item' => $item->getReturn(),
             'error' => [],
             'user' => $this->user->getReturn()
         ];

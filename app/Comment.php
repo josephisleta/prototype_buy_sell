@@ -31,6 +31,6 @@ class Comment extends Model
 
     public function getUserDataAttribute()
     {
-        return $this->user()->get();
+        return $this->user()->first();
     }
 }

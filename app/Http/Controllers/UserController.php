@@ -36,17 +36,13 @@ class UserController extends Controller
         $items = Item::all()->sortByDesc('created_at');
 
         $master_categories = config('constant.ITEM_CATEGORIES');
-
         $item_display = [];
-
         foreach ($master_categories as $master_category) {
             $item_display[$master_category] = [];
         }
 
         foreach ($items as $item) {
-            $item['likes'] = $item->likes;
-            $item['comments'] = $item->comments;
-            $item_display[$master_categories[$item->category->master_category_id]][] = $item;
+            $item_display[$master_categories[$item->category->master_category_id]][] = $item->getReturn();
         }
 
         $data = [
@@ -61,11 +57,9 @@ class UserController extends Controller
     
     public function items()
     {
-        $items = $this->user->items;
-
-        foreach ($items as $item) {
-            $item['likes'] = $item->likes;
-            $item['comments'] = $item->comments;
+        $items = [];
+        foreach ($this->user->items as $item) {
+            $items[] = $item->getReturn();
         }
 
         $data = [
@@ -86,21 +80,26 @@ class UserController extends Controller
         if ($this->request->user_id && ($this->request->user_id != $this->user->id)) {
             $other_user = User::find($this->request->user_id);
 
-            $other_user['items'] = $other_user->items;
-            $other_user['score'] = $other_user->getRatings(config('constant.PURCHASE_RATING.great'))->count() - $other_user->getRatings(config('constant.PURCHASE_RATING.poor'))->count();
-            $other_user['listings'] = $other_user->items->count();
-            $other_user['ratings'] = [
-                'great' => $other_user->getRatings(config('constant.PURCHASE_RATING.great'))->count(),
-                'good' => $other_user->getRatings(config('constant.PURCHASE_RATING.good'))->count(),
-                'poor' => $other_user->getRatings(config('constant.PURCHASE_RATING.poor'))->count()
-            ];
-            $other_user['has_followed'] = $this->user->follows()->where('following_user_id', $other_user->id)->exists();
+            $items = collect();
+            foreach ($other_user->items as $item) {
+                $items[] = $item->getReturn();
+            }
 
             $data = [
                 'success' => true,
-                'user_data' => $other_user,
+                'user_data' => array_merge($other_user->getReturn(false), [
+                    'items' => $items,
+                    'score' => $user->getRatings(config('constant.PURCHASE_RATING.great'))->count() - $user->getRatings(config('constant.PURCHASE_RATING.poor'))->count(),
+                    'listings' => $user->items->count(),
+                    'ratings' => [
+                        'great' => $user->getRatings(config('constant.PURCHASE_RATING.great'))->count(),
+                        'good' => $user->getRatings(config('constant.PURCHASE_RATING.good'))->count(),
+                        'poor' => $user->getRatings(config('constant.PURCHASE_RATING.poor'))->count(),
+                    ],
+                    'has_followed' => $this->user->follows()->where('following_user_id', $other_user->id)->exists()
+                ]),
                 'error' => [],
-                'user' => $user
+                'user' => $user->getReturn()
             ];
 
             Notification::createNotif([
@@ -112,19 +111,24 @@ class UserController extends Controller
 
             return response()->json($data);
         } else {
-            $user['items'] = $user->items;
-            $user['score'] = $user->getRatings(config('constant.PURCHASE_RATING.great'))->count() - $user->getRatings(config('constant.PURCHASE_RATING.poor'))->count();
-            $user['listings'] = $user->items->count();
-            $user['ratings'] = [
-                'great' => $user->getRatings(config('constant.PURCHASE_RATING.great'))->count(),
-                'good' => $user->getRatings(config('constant.PURCHASE_RATING.good'))->count(),
-                'poor' => $user->getRatings(config('constant.PURCHASE_RATING.poor'))->count(),
-            ];
+            $items = collect();
+            foreach ($user->items as $item) {
+                $items[] = $item->getReturn();
+            }
 
             $data = [
                 'success' => true,
                 'error' => [],
-                'user' => $user
+                'user' => array_merge($user->getReturn(),[
+                    'items' => $items,
+                    'score' => $user->getRatings(config('constant.PURCHASE_RATING.great'))->count() - $user->getRatings(config('constant.PURCHASE_RATING.poor'))->count(),
+                    'listings' => $user->items->count(),
+                    'ratings' => [
+                        'great' => $user->getRatings(config('constant.PURCHASE_RATING.great'))->count(),
+                        'good' => $user->getRatings(config('constant.PURCHASE_RATING.good'))->count(),
+                        'poor' => $user->getRatings(config('constant.PURCHASE_RATING.poor'))->count(),
+                    ]
+                ])
             ];
 
             return response()->json($data);
@@ -161,15 +165,13 @@ class UserController extends Controller
     public function likesViews()
     {
         $item_likes = [];
-
         foreach ($this->user->likes->sortByDesc('created_at') as $like) {
-            $item_likes[] = $like->item;
+            $item_likes[] = $like->item->getReturn();
         }
 
         $item_views = [];
-
         foreach ($this->user->item_views->sortByDesc('created_at')->unique('item_id') as $item_view) {
-            $item_views[] = $item_view->item;
+            $item_views[] = $item_view->item->getReturn();
         }
 
         $data = [
@@ -285,16 +287,15 @@ class UserController extends Controller
         if ($this->request->user_id && ($this->user->id != $this->request->user_id)) {
             $other_user = User::find($this->request->user_id);
 
-            $ratings = [
-                'great' => $other_user->getRatings(config('constant.PURCHASE_RATING.great')),
-                'good' => $other_user->getRatings(config('constant.PURCHASE_RATING.good')),
-                'poor' => $other_user->getRatings(config('constant.PURCHASE_RATING.poor')),
-            ];
-
             $data = [
                 'success' => true,
-                'user_data' => $other_user,
-                'ratings' => $ratings,
+                'user_data' => array_merge($other_user->getReturn(false), [
+                    'ratings' => [
+                        'great' => $other_user->getRatings(config('constant.PURCHASE_RATING.great')),
+                        'good' => $other_user->getRatings(config('constant.PURCHASE_RATING.good')),
+                        'poor' => $other_user->getRatings(config('constant.PURCHASE_RATING.poor')),
+                    ]
+                ]),
                 'error' => [],
                 'user' => $this->user->getReturn()
             ];

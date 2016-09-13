@@ -138,9 +138,9 @@ class User extends Authenticatable
         return $ratings;
     }
     
-    public function getReturn()
+    public function getReturn($notif = true)
     {
-        return [
+        $data =  [
             'id'            => $this->id,
             'username'      => $this->username,
             'firstname'     => $this->firstname,
@@ -150,8 +150,13 @@ class User extends Authenticatable
             'location'      => $this->location,
             'contact'       => $this->contact,
             'avatar'        => $this->avatar,
-            'birthdate'     => $this->birthdate,
-            'notifications' => $this->notifications
+            'birthdate'     => $this->birthdate
         ];
+
+        if (!$notif) return $data;
+
+        return array_merge($data, [
+            'notifications' => $this->notifications
+        ]);
     }
 }

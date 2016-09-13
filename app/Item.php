@@ -24,6 +24,9 @@ class Item extends Model
     ];
 
     public $appends = [
+        'category_data',
+        'brand_data',
+        'condition_data',
         'like_count',
         'comment_count',
         'user_data'
@@ -58,6 +61,16 @@ class Item extends Model
     {
         return $this->hasOne('App\PurchaseRating');
     }
+    
+    public function condition()
+    {
+        return $this->hasOne('App\Condition', 'id', 'condition_id');
+    }
+
+    public function brand()
+    {
+        return $this->hasOne('App\Brand', 'id', 'brand_id');
+    }
 
     public function getLikeCountAttribute()
     {
@@ -87,9 +100,48 @@ class Item extends Model
 
         return [URL::to('/images/default_item.jpg')];
     }
+
+    public function getCategoryDataAttribute()
+    {
+        return $this->category()->get();
+    }
+
+    public function getConditionDataAttribute()
+    {
+        return $this->condition()->get();
+    }
+
+    public function getBrandDataAttribute()
+    {
+        return $this->brand()->get();
+    }
     
     public function isAvailable()
     {
         return $this->attributes['status'] == config('constant.ITEM_STATUS.available');
+    }
+
+    public function getReturn()
+    {
+        return [
+            'id' => $this->id,
+            'category' => $this->category,
+            'brand' => $this->brand,
+            'name' => $this->name,
+            'description' => $this->description,
+            'price' => $this->price,
+            'pictures' => $this->pictures,
+            'condition' => $this->condition,
+            'size' => $this->size,
+            'shipping_fee' => $this->shipping_fee,
+            'ships_from' => $this->ships_from,
+            'shipping_duration' => $this->shipping_duration,
+            'status' => $this->status,
+            'likes' => $this->likes,
+            'comments' => $this->comments,
+            'user' => $this->user,
+            'created_at' => $this->attributes['created_at'],
+            'updated_at' => $this->attributes['updated_at'],
+        ];
     }
 }

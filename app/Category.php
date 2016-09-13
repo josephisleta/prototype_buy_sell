@@ -13,9 +13,18 @@ class Category extends Model
         'name'
     ];
 
+    protected $appends = [
+        'parent_category'
+    ];
+
     protected $hidden = [
+        'master_category_id',
         'created_at',
         'updated_at'
     ];
-    
+
+    public function getParentCategoryAttribute()
+    {
+        return config("constant.ITEM_CATEGORIES.{$this->attributes['master_category_id']}");
+    }
 }

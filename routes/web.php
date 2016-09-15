@@ -35,7 +35,7 @@ Route::group(['middleware' => 'user'], function () {
     Route::get('/user/profile/ratings',['as' => 'user_ratings',     'uses' => 'UserController@viewRatings']);
 
     Route::get('/item/sell',          ['as' => 'item_sell',    'uses' => 'ItemController@viewAdd']);
-    Route::get('/item/sell/save',     ['as' => 'item_save',    'uses' => 'ItemController@addSave']);
+    Route::post('/item/sell/save',    ['as' => 'item_save',    'uses' => 'ItemController@addSave']);
     Route::get('/item/view',          ['as' => 'item_view',    'uses' => 'ItemController@view']);
     Route::get('/item/like',          ['as' => 'item_like',    'uses' => 'ItemController@like']);
     Route::get('/item/comment',       ['as' => 'item_comment', 'uses' => 'ItemController@comment']);

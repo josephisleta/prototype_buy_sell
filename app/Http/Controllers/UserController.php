@@ -46,10 +46,10 @@ class UserController extends Controller
         }
 
         $data = [
-            'success' => true,
+            'success'      => true,
             'item_display' => $item_display,
-            'error' => [],
-            'user' => $this->user->getReturn()
+            'error'        => [],
+            'user'         => $this->user->getReturn()
         ];
 
         return response()->json($data);
@@ -64,9 +64,9 @@ class UserController extends Controller
 
         $data = [
             'success' => true,
-            'items' => $items,
-            'error' => [],
-            'user' => $this->user->getReturn()
+            'items'   => $items,
+            'error'   => [],
+            'user'    => $this->user->getReturn()
         ];
         
         return response()->json($data);
@@ -86,20 +86,20 @@ class UserController extends Controller
             }
 
             $data = [
-                'success' => true,
+                'success'   => true,
                 'user_data' => array_merge($other_user->getReturn(false), [
-                    'items' => $items,
-                    'score' => $user->getRatings(config('constant.PURCHASE_RATING.great'))->count() - $user->getRatings(config('constant.PURCHASE_RATING.poor'))->count(),
-                    'listings' => $user->items->count(),
-                    'ratings' => [
+                    'items'        => $items,
+                    'score'        => $user->getRatings(config('constant.PURCHASE_RATING.great'))->count() - $user->getRatings(config('constant.PURCHASE_RATING.poor'))->count(),
+                    'listings'     => $user->items->count(),
+                    'ratings'      => [
                         'great' => $user->getRatings(config('constant.PURCHASE_RATING.great'))->count(),
-                        'good' => $user->getRatings(config('constant.PURCHASE_RATING.good'))->count(),
-                        'poor' => $user->getRatings(config('constant.PURCHASE_RATING.poor'))->count(),
+                        'good'  => $user->getRatings(config('constant.PURCHASE_RATING.good'))->count(),
+                        'poor'  => $user->getRatings(config('constant.PURCHASE_RATING.poor'))->count(),
                     ],
                     'has_followed' => $this->user->follows()->where('following_user_id', $other_user->id)->exists()
                 ]),
-                'error' => [],
-                'user' => $user->getReturn()
+                'error'    => [],
+                'user'     => $user->getReturn()
             ];
 
             Notification::createNotif([
@@ -118,15 +118,15 @@ class UserController extends Controller
 
             $data = [
                 'success' => true,
-                'error' => [],
-                'user' => array_merge($user->getReturn(),[
-                    'items' => $items,
-                    'score' => $user->getRatings(config('constant.PURCHASE_RATING.great'))->count() - $user->getRatings(config('constant.PURCHASE_RATING.poor'))->count(),
+                'error'   => [],
+                'user'    => array_merge($user->getReturn(),[
+                    'items'    => $items,
+                    'score'    => $user->getRatings(config('constant.PURCHASE_RATING.great'))->count() - $user->getRatings(config('constant.PURCHASE_RATING.poor'))->count(),
                     'listings' => $user->items->count(),
-                    'ratings' => [
+                    'ratings'  => [
                         'great' => $user->getRatings(config('constant.PURCHASE_RATING.great'))->count(),
-                        'good' => $user->getRatings(config('constant.PURCHASE_RATING.good'))->count(),
-                        'poor' => $user->getRatings(config('constant.PURCHASE_RATING.poor'))->count(),
+                        'good'  => $user->getRatings(config('constant.PURCHASE_RATING.good'))->count(),
+                        'poor'  => $user->getRatings(config('constant.PURCHASE_RATING.poor'))->count(),
                     ]
                 ])
             ];
@@ -155,8 +155,8 @@ class UserController extends Controller
 
         $data = [
             'success' => true,
-            'error' => [],
-            'user' => $this->user->getReturn()
+            'error'   => [],
+            'user'    => $this->user->getReturn()
         ];
 
         return response()->json($data);
@@ -175,11 +175,11 @@ class UserController extends Controller
         }
 
         $data = [
-            'success' => true,
+            'success'    => true,
             'item_likes' => $item_likes,
             'item_views' => $item_views,
-            'error' => [],
-            'user' => $this->user->getReturn()
+            'error'      => [],
+            'user'       => $this->user->getReturn()
         ];
 
         return response()->json($data);
@@ -190,8 +190,8 @@ class UserController extends Controller
         if (!$this->request->user_id) {
             return response()->json([
                 'success' => false,
-                'error' => ['User id is required.'],
-                'user' => $this->user->getReturn()
+                'error'   => ['User id is required.'],
+                'user'    => $this->user->getReturn()
             ]);
         }
 
@@ -200,24 +200,24 @@ class UserController extends Controller
         if (!$following_user) {
             return response()->json([
                 'success' => false,
-                'error' => ['User does not exist.'],
-                'user' => $this->user->getReturn()
+                'error'   => ['User does not exist.'],
+                'user'    => $this->user->getReturn()
             ]);
         }
 
         if ($following_user->id == $this->user->id) {
             return response()->json([
                 'success' => false,
-                'error' => ['Cannot follow yourself.'],
-                'user' => $this->user->getReturn()
+                'error'   => ['Cannot follow yourself.'],
+                'user'    => $this->user->getReturn()
             ]);
         }
 
         if ($this->user->follows()->where('following_user_id', $following_user->id)->first()) {
             return response()->json([
                 'success' => false,
-                'error' => ['Already followed this user.'],
-                'user' => $this->user->getReturn()
+                'error'   => ['Already followed this user.'],
+                'user'    => $this->user->getReturn()
             ]);
         }
 
@@ -225,8 +225,8 @@ class UserController extends Controller
 
         $data = [
             'success' => true,
-            'error' => [],
-            'user' => $this->user->getReturn()
+            'error'   => [],
+            'user'    => $this->user->getReturn()
         ];
 
         return response()->json($data);
@@ -237,8 +237,8 @@ class UserController extends Controller
         if (!$this->request->user_id) {
             return response()->json([
                 'success' => false,
-                'error' => ['User id is required.'],
-                'user' => $this->user->getReturn()
+                'error'   => ['User id is required.'],
+                'user'    => $this->user->getReturn()
             ]);
         }
 
@@ -247,24 +247,24 @@ class UserController extends Controller
         if (!$following_user) {
             return response()->json([
                 'success' => false,
-                'error' => ['User does not exist.'],
-                'user' => $this->user->getReturn()
+                'error'   => ['User does not exist.'],
+                'user'    => $this->user->getReturn()
             ]);
         }
 
         if ($following_user->id == $this->user->id) {
             return response()->json([
                 'success' => false,
-                'error' => ['Cannot unfollow yourself.'],
-                'user' => $this->user->getReturn()
+                'error'   => ['Cannot unfollow yourself.'],
+                'user'    => $this->user->getReturn()
             ]);
         }
 
         if (!$this->user->follows()->where('following_user_id', $following_user->id)->first()) {
             return response()->json([
                 'success' => false,
-                'error' => ['You are not following this user.'],
-                'user' => $this->user->getReturn()
+                'error'   => ['You are not following this user.'],
+                'user'    => $this->user->getReturn()
             ]);
         }
 
@@ -275,8 +275,8 @@ class UserController extends Controller
 
         $data = [
             'success' => true,
-            'error' => [],
-            'user' => $this->user->getReturn()
+            'error'   => [],
+            'user'    => $this->user->getReturn()
         ];
 
         return response()->json($data);
@@ -288,32 +288,32 @@ class UserController extends Controller
             $other_user = User::find($this->request->user_id);
 
             $data = [
-                'success' => true,
+                'success'   => true,
                 'user_data' => array_merge($other_user->getReturn(false), [
                     'ratings' => [
                         'great' => $other_user->getRatings(config('constant.PURCHASE_RATING.great')),
-                        'good' => $other_user->getRatings(config('constant.PURCHASE_RATING.good')),
-                        'poor' => $other_user->getRatings(config('constant.PURCHASE_RATING.poor')),
+                        'good'  => $other_user->getRatings(config('constant.PURCHASE_RATING.good')),
+                        'poor'  => $other_user->getRatings(config('constant.PURCHASE_RATING.poor')),
                     ]
                 ]),
-                'error' => [],
-                'user' => $this->user->getReturn()
+                'error'     => [],
+                'user'      => $this->user->getReturn()
             ];
 
             return response()->json($data);
         } else {
             $ratings = [
                 'great' => $this->user->getRatings(config('constant.PURCHASE_RATING.great')),
-                'good' => $this->user->getRatings(config('constant.PURCHASE_RATING.good')),
-                'poor' => $this->user->getRatings(config('constant.PURCHASE_RATING.poor')),
+                'good'  => $this->user->getRatings(config('constant.PURCHASE_RATING.good')),
+                'poor'  => $this->user->getRatings(config('constant.PURCHASE_RATING.poor')),
             ];
         }
         
         $data = [
             'success' => true,
             'ratings' => $ratings,
-            'error' => [],
-            'user' => $this->user->getReturn()
+            'error'   => [],
+            'user'    => $this->user->getReturn()
         ];
 
         return response()->json($data);

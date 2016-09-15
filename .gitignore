@@ -5,3 +5,7 @@
 Homestead.json
 Homestead.yaml
 .env
+/public/images/items/
+.DS_Store
+public/.DS_Store
+public/images/.DS_Store

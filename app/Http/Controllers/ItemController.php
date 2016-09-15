@@ -7,7 +7,11 @@ use App\Condition;
 use App\ItemView;
 use App\Notification;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Input;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
+use Intervention\Image\Facades\Image;
+use Illuminate\Support\Facades\File;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use Tymon\JWTAuth\Exceptions\JWTException;
 use Tymon\JWTAuth\Exceptions\TokenExpiredException;
@@ -39,8 +43,8 @@ class ItemController extends Controller
 
         if (!$item) return response()->json([
             'success' => false,
-            'error' => ['Item does not exist.'],
-            'user' => $this->user->getReturn()
+            'error'   => ['Item does not exist.'],
+            'user'    => $this->user->getReturn()
         ]);
         
         $this->user->item_views()->create(['item_id' => $item->id]);
@@ -48,11 +52,11 @@ class ItemController extends Controller
         $is_buyer = $this->user->purchases()->where('item_id', $item->id)->exists();
 
         $data = [
-            'success' => true,
+            'success'  => true,
             'is_buyer' => $is_buyer,
-            'item' => $item->getReturn(),
-            'error' => [],
-            'user' => $this->user->getReturn()
+            'item'     => $item->getReturn(),
+            'error'    => [],
+            'user'     => $this->user->getReturn()
         ];
 
         return response()->json($data);
@@ -61,12 +65,12 @@ class ItemController extends Controller
     public function viewAdd()
     {
         $data = [
-            'success' => true,
+            'success'    => true,
             'conditions' => Condition::all(),
             'categories' => Category::all(),
-            'brands' => Brand::all(),
-            'error' => [],
-            'user' => $this->user->getReturn()
+            'brands'     => Brand::all(),
+            'error'      => [],
+            'user'       => $this->user->getReturn()
         ];
 
         return response()->json($data);
@@ -75,6 +79,9 @@ class ItemController extends Controller
     public function addSave()
     {
         $error = [];
+
+        Log::info($this->request->method());
+        Log::info($this->request);
 
         if (!$this->request->name) $error[] = 'Name is required.';
         if (!$this->request->description) $error[] = 'Description is required.';
@@ -88,25 +95,55 @@ class ItemController extends Controller
 
         if ($error) return response()->json([
             'success' => false,
-            'error' => $error,
-            'user' => $this->user->getReturn()
+            'error'   => $error,
+            'user'    => $this->user->getReturn()
         ]);
 
         $request = [
-            'user_id' => $this->user->id,
-            'category_id' => $this->request->category_id,
-            'brand_id' => isset($this->request->brand_id) ? $this->request->brand_id : null,
-            'name' => $this->request->name,
-            'description' => $this->request->description,
-            'price' => $this->request->price,
-            'condition' => $this->request->condition_id,
-            'size' => isset($this->request->size) ? $this->request->size : null,
-            'shipping_fee' => isset($this->request->shipping_fee) ? $this->request->shipping_fee : 0,
-            'ships_from' => isset($this->request->ships_from) ? $this->request->ships_from : '',
+            'user_id'           => $this->user->id,
+            'category_id'       => $this->request->category_id,
+            'brand_id'          => isset($this->request->brand_id) ? $this->request->brand_id : null,
+            'name'              => $this->request->name,
+            'description'       => $this->request->description,
+            'price'             => $this->request->price,
+            'condition_id'      => $this->request->condition_id,
+            'size'              => isset($this->request->size) ? $this->request->size : null,
+            'shipping_fee'      => isset($this->request->shipping_fee) ? $this->request->shipping_fee : 0,
+            'ships_from'        => isset($this->request->ships_from) ? $this->request->ships_from : '',
             'shipping_duration' => isset($this->request->shipping_duration) ? $this->request->shipping_duration : null
         ];
 
         $item = Item::create($request);
+
+        if ($this->request->pictures) {
+            $count = 1;
+            $pictures = [];
+
+            if (!File::exists(public_path("images/items/{$item->id}/"))) {
+                File::makeDirectory(public_path("images/items/{$item->id}/"));
+            }
+
+            foreach ($this->request->pictures as $picture) {
+                $filename  = time() . $count . '.' . $picture->getClientOriginalExtension();
+                $path = public_path("images/items/{$item->id}/" . $filename);
+
+                Image::make($picture->getRealPath())->save($path);
+                $count++;
+                $pictures[] = $filename;
+            }
+
+//            $filename  = time() . $count . '.' . $this->request->pictures->getClientOriginalExtension();
+//            $path = public_path("images/items/{$item->id}/" . $filename);
+//            if (!File::exists(public_path("images/items/{$item->id}/"))) {
+//                File::makeDirectory(public_path("images/items/{$item->id}/"));
+//            }
+//
+//            Image::make($this->request->pictures->getRealPath())->save($path);
+//            $pictures[] = $filename;
+
+            $item->pictures = serialize($pictures);
+            $item->save();
+        }
 
         if ($this->user->followers->count() >= 1) {
             Notification::createNotif([
@@ -120,9 +157,9 @@ class ItemController extends Controller
 
         $data = [
             'success' => true,
-            'item' => $item->getReturn(),
-            'error' => [],
-            'user' => $this->user->getReturn()
+            'item'    => $item->getReturn(),
+            'error'   => [],
+            'user'    => $this->user->getReturn()
         ];
 
         return response()->json($data);
@@ -134,23 +171,23 @@ class ItemController extends Controller
 
         if (!$item) return response()->json([
             'success' => false,
-            'error' => ['Item does not exist.'],
-            'user' => $this->user->getReturn()
+            'error'   => ['Item does not exist.'],
+            'user'    => $this->user->getReturn()
         ]);
 
         if ($item->user_id == $this->user->id) {
             return response()->json([
                 'success' => false,
-                'error' => ['Cannot like your own item.'],
-                'user' => $this->user->getReturn()
+                'error'   => ['Cannot like your own item.'],
+                'user'    => $this->user->getReturn()
             ]);
         }
 
         if ($this->user->likes()->where('item_id', $item->id)->first()) {
             return response()->json([
                 'success' => false,
-                'error' => ['Already liked this item.'],
-                'user' => $this->user->getReturn()
+                'error'   => ['Already liked this item.'],
+                'user'    => $this->user->getReturn()
             ]);
         }
 
@@ -166,9 +203,9 @@ class ItemController extends Controller
         
         $data = [
             'success' => true,
-            'item' => $item->getReturn(),
-            'error' => [],
-            'user' => $this->user->getReturn()
+            'item'    => $item->getReturn(),
+            'error'   => [],
+            'user'    => $this->user->getReturn()
         ];
 
         return response()->json($data);
@@ -180,19 +217,19 @@ class ItemController extends Controller
 
         if (!$item) return response()->json([
             'success' => false,
-            'error' => ['Item does not exist.'],
-            'user' => $this->user->getReturn()
+            'error'   => ['Item does not exist.'],
+            'user'    => $this->user->getReturn()
         ]);
 
         if (!$this->request->body) return response()->json([
             'success' => false,
-            'error' => ['Body is required.'],
-            'user' => $this->user->getReturn()
+            'error'   => ['Body is required.'],
+            'user'    => $this->user->getReturn()
         ]);
 
         $request = [
             'item_id' => $item->id,
-            'body' => $this->request->body
+            'body'    => $this->request->body
         ];
 
         $this->user->comments()->create($request);
@@ -209,9 +246,9 @@ class ItemController extends Controller
         
         $data = [
             'success' => true,
-            'item' => $item->getReturn(),
-            'error' => [],
-            'user' => $this->user->getReturn()
+            'item'    => $item->getReturn(),
+            'error'   => [],
+            'user'    => $this->user->getReturn()
         ];
 
         return response()->json($data);
@@ -223,15 +260,15 @@ class ItemController extends Controller
 
         if (!$item) return response()->json([
             'success' => false,
-            'error' => ['Item does not exist.'],
-            'user' => $this->user->getReturn()
+            'error'   => ['Item does not exist.'],
+            'user'    => $this->user->getReturn()
         ]);
 
         if ($item->user_id != $this->user->id) {
             return response()->json([
                 'success' => false,
-                'error' => ['Cannot delete this item because it does not belong to the user.'],
-                'user' => $this->user->getReturn()
+                'error'   => ['Cannot delete this item because it does not belong to the user.'],
+                'user'    => $this->user->getReturn()
             ]);
         }
 
@@ -253,12 +290,12 @@ class ItemController extends Controller
         $error = [];
         
         $data = [
-            'success' => true,
-            'keyword' => $keyword,
+            'success'    => true,
+            'keyword'    => $keyword,
             'item_count' => $items->count(),
-            'items' => $items,
-            'error' => $error,
-            'user' => $this->user->getReturn()
+            'items'      => $items,
+            'error'      => $error,
+            'user'       => $this->user->getReturn()
         ];
         
         return response()->json($data);
@@ -270,8 +307,8 @@ class ItemController extends Controller
 
         if (!$category) return response()->json([
             'success' => false,
-            'error' => ['Category does not exist.'],
-            'user' => $this->user->getReturn()
+            'error'   => ['Category does not exist.'],
+            'user'    => $this->user->getReturn()
         ]);
 
         $items = collect();
@@ -282,12 +319,12 @@ class ItemController extends Controller
         $error = [];
 
         $data = [
-            'success' => true,
-            'category' => $category->name,
+            'success'    => true,
+            'category'   => $category->name,
             'item_count' => $items->count(),
-            'items' => $items,
-            'error' => $error,
-            'user' => $this->user->getReturn()
+            'items'      => $items,
+            'error'      => $error,
+            'user'       => $this->user->getReturn()
         ];
 
         return response()->json($data);
@@ -305,8 +342,8 @@ class ItemController extends Controller
         if ($validator->fails()) {
             $data = [
                 'success' => false,
-                'error' => $validator->errors()->all(),
-                'user' => $this->user->getReturn()
+                'error'   => $validator->errors()->all(),
+                'user'    => $this->user->getReturn()
             ];
 
             return response()->json($data);
@@ -317,8 +354,8 @@ class ItemController extends Controller
         if (!$item) {
             $data = [
                 'success' => false,
-                'error' => ['Item does not exist.'],
-                'user' => $this->user->getReturn()
+                'error'   => ['Item does not exist.'],
+                'user'    => $this->user->getReturn()
             ];
 
             return response()->json($data);
@@ -327,8 +364,8 @@ class ItemController extends Controller
         if ($item->user->id == $this->user->id) {
             $data = [
                 'success' => false,
-                'error' => ['Cannot buy your own item.'],
-                'user' => $this->user->getReturn()
+                'error'   => ['Cannot buy your own item.'],
+                'user'    => $this->user->getReturn()
             ];
 
             return response()->json($data);
@@ -337,24 +374,24 @@ class ItemController extends Controller
         if (!$item->isAvailable()) {
             $data = [
                 'success' => false,
-                'error' => ['Item is not available.'],
-                'user' => $this->user->getReturn()
+                'error'   => ['Item is not available.'],
+                'user'    => $this->user->getReturn()
             ];
 
             return response()->json($data);
         }
 
         $purchase = [
-            'item_id' => $item->id,
+            'item_id'          => $item->id,
             'shipping_address' => $this->request->shipping_address,
-            'status' => config('constant.PURCHASE_STATUS.pending')
+            'status'           => config('constant.PURCHASE_STATUS.pending')
         ];
 
         $this->user->purchases()->create($purchase);
 
         $payment = [
             'item_id' => $item->id,
-            'amount' => $item->price
+            'amount'  => $item->price
         ];
 
         $this->user->payments()->create($payment);
@@ -371,9 +408,9 @@ class ItemController extends Controller
 
         $data = [
             'success' => true,
-            'item' => $item->getReturn(),
-            'error' => [],
-            'user' => $this->user->getReturn()
+            'item'    => $item->getReturn(),
+            'error'   => [],
+            'user'    => $this->user->getReturn()
         ];
 
         return response()->json($data);
@@ -389,8 +426,8 @@ class ItemController extends Controller
         if ($error) {
             $data = [
                 'success' => false,
-                'error' => $error,
-                'user' => $this->user->getReturn()
+                'error'   => $error,
+                'user'    => $this->user->getReturn()
             ];
 
             return response()->json($data);
@@ -401,8 +438,8 @@ class ItemController extends Controller
         if (!$item) {
             $data = [
                 'success' => false,
-                'error' => ['Item does not exist.'],
-                'user' => $this->user->getReturn()
+                'error'   => ['Item does not exist.'],
+                'user'    => $this->user->getReturn()
             ];
 
             return response()->json($data);
@@ -413,8 +450,8 @@ class ItemController extends Controller
         if (!$is_buyer) {
             $data = [
                 'success' => false,
-                'error' => ['You cannot rate this item. You are not the item buyer.'],
-                'user' => $this->user->getReturn()
+                'error'   => ['You cannot rate this item. You are not the item buyer.'],
+                'user'    => $this->user->getReturn()
             ];
 
             return response()->json($data);
@@ -425,8 +462,8 @@ class ItemController extends Controller
         if ($purchase->status == config('constant.PURCHASE_STATUS.complete')) {
             $data = [
                 'success' => false,
-                'error' => ['Cannot rate. Purchase has already been completed.'],
-                'user' => $this->user->getReturn()
+                'error'   => ['Cannot rate. Purchase has already been completed.'],
+                'user'    => $this->user->getReturn()
             ];
 
             return response()->json($data);
@@ -434,7 +471,7 @@ class ItemController extends Controller
 
         $this->user->purchase_ratings()->create([
             'item_id' => $item->id,
-            'rating' => $this->request->rating,
+            'rating'  => $this->request->rating,
             'message' => isset($this->request->message) ? $this->request->message : null
         ]);
 
@@ -450,16 +487,16 @@ class ItemController extends Controller
         ]);
 
         $item->user->debits()->create([
-            'amount' => $item->price,
-            'type' => '',
+            'amount'  => $item->price,
+            'type'    => '',
             'item_id' => $item->id
         ]);
 
         $data = [
             'success' => true,
-            'item' => $item->getReturn(),
-            'error' => [],
-            'user' => $this->user->getReturn()
+            'item'    => $item->getReturn(),
+            'error'   => [],
+            'user'    => $this->user->getReturn()
         ];
 
         return response()->json($data);

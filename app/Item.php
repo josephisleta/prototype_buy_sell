@@ -29,7 +29,7 @@ class Item extends Model
         'condition_data',
         'like_count',
         'comment_count',
-        'user_data'
+        'user_data',
     ];
     
     public function user()
@@ -89,10 +89,10 @@ class Item extends Model
     
     public function getPicturesAttribute()
     {
-        if ($this->attributes['pictures']) {
+        if (isset($this->attributes['pictures'])) {
             $pictures = [];
             foreach (unserialize($this->attributes['pictures']) as $picture) {
-                $pictures[] = URL::to("/images/{$picture}");
+                $pictures[] = URL::to("/images/items/{$this->id}/{$picture}");
             }
 
             return $pictures;

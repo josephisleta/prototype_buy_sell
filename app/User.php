@@ -137,8 +137,12 @@ class User extends Authenticatable
         
         return $ratings;
     }
-    
-    public function getReturn($notif = true)
+
+    /**
+     * @param array $excludes
+     * @return array
+     */
+    public function getReturn($excludes = array())
     {
         $data =  [
             'id'            => $this->id,
@@ -150,13 +154,16 @@ class User extends Authenticatable
             'location'      => $this->location,
             'contact'       => $this->contact,
             'avatar'        => $this->avatar,
-            'birthdate'     => $this->birthdate
+            'birthdate'     => $this->birthdate,
+            'notifications' => $this->notifications
         ];
 
-        if (!$notif) return $data;
+        if (!$excludes) return $data;
 
-        return array_merge($data, [
-            'notifications' => $this->notifications
-        ]);
+        foreach ($excludes as $exclude) {
+            unset($data[$exclude]);
+        }
+
+        return $data;
     }
 }

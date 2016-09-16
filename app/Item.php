@@ -121,27 +121,39 @@ class Item extends Model
         return $this->attributes['status'] == config('constant.ITEM_STATUS.available');
     }
 
-    public function getReturn()
+    /**
+     * @param array $excludes
+     * @return array
+     */
+    public function getReturn($excludes = array())
     {
-        return [
-            'id' => $this->id,
-            'category' => $this->category,
-            'brand' => $this->brand,
-            'name' => $this->name,
-            'description' => $this->description,
-            'price' => $this->price,
-            'pictures' => $this->pictures,
-            'condition' => $this->condition,
-            'size' => $this->size,
-            'shipping_fee' => $this->shipping_fee,
-            'ships_from' => $this->ships_from,
+        $data = [
+            'id'                => $this->id,
+            'category'          => $this->category,
+            'brand'             => $this->brand,
+            'name'              => $this->name,
+            'description'       => $this->description,
+            'price'             => $this->price,
+            'pictures'          => $this->pictures,
+            'condition'         => $this->condition,
+            'size'              => $this->size,
+            'shipping_fee'      => $this->shipping_fee,
+            'ships_from'        => $this->ships_from,
             'shipping_duration' => $this->shipping_duration,
-            'status' => $this->status,
-            'likes' => $this->likes,
-            'comments' => $this->comments,
-            'user' => $this->user,
-            'created_at' => $this->attributes['created_at'],
-            'updated_at' => $this->attributes['updated_at'],
+            'status'            => $this->status,
+            'likes'             => $this->likes,
+            'comments'          => $this->comments,
+            'user'              => $this->user,
+            'created_at'        => $this->attributes['created_at'],
+            'updated_at'        => $this->attributes['updated_at'],
         ];
+        
+        if (!$excludes) return $data;
+        
+        foreach ($excludes as $exclude) {
+            unset($data[$exclude]);
+        }
+
+        return $data;
     }
 }

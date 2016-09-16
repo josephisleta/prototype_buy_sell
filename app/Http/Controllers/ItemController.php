@@ -132,15 +132,6 @@ class ItemController extends Controller
                 $pictures[] = $filename;
             }
 
-//            $filename  = time() . $count . '.' . $this->request->pictures->getClientOriginalExtension();
-//            $path = public_path("images/items/{$item->id}/" . $filename);
-//            if (!File::exists(public_path("images/items/{$item->id}/"))) {
-//                File::makeDirectory(public_path("images/items/{$item->id}/"));
-//            }
-//
-//            Image::make($this->request->pictures->getRealPath())->save($path);
-//            $pictures[] = $filename;
-
             $item->pictures = serialize($pictures);
             $item->save();
         }

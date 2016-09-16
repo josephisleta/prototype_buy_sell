@@ -42,7 +42,10 @@ class UserController extends Controller
         }
 
         foreach ($items as $item) {
-            $item_display[$master_categories[$item->category->master_category_id]][] = $item->getReturn();
+            $excludes = ['likes', 'comments'];
+            $item_display[$master_categories[$item->category->master_category_id]][] = array_merge($item->getReturn($excludes), [
+                'like_count' => $item->likes->count()
+            ]);
         }
 
         $data = [
@@ -87,7 +90,7 @@ class UserController extends Controller
 
             $data = [
                 'success'   => true,
-                'user_data' => array_merge($other_user->getReturn(false), [
+                'user_data' => array_merge($other_user->getReturn(['notifications']), [
                     'items'        => $items,
                     'score'        => $user->getRatings(config('constant.PURCHASE_RATING.great'))->count() - $user->getRatings(config('constant.PURCHASE_RATING.poor'))->count(),
                     'listings'     => $user->items->count(),
@@ -142,11 +145,10 @@ class UserController extends Controller
         if ($this->request->contact) $this->user->contact = $this->request->contact;
         if ($this->request->birth_date) $this->user->birth_date = $this->request->birth_date;
         if ($this->request->avatar) {
-            $image = Input::file('avatar');
-            $filename  = time() . '.' . $image->getClientOriginalExtension();
+            $filename  = time() . '_' . $this->user->username . '.' . $this->request->avatar->getClientOriginalExtension();
             $path = public_path('images/users' . $filename);
 
-            Image::make($image->getRealPath())->resize(200, 200)->save($path);
+            Image::make($this->request->avatar->getRealPath())->resize(200, 200)->save($path);
 
             $this->user->avatar = $filename;
         }
@@ -289,7 +291,7 @@ class UserController extends Controller
 
             $data = [
                 'success'   => true,
-                'user_data' => array_merge($other_user->getReturn(false), [
+                'user_data' => array_merge($other_user->getReturn(['notifications']), [
                     'ratings' => [
                         'great' => $other_user->getRatings(config('constant.PURCHASE_RATING.great')),
                         'good'  => $other_user->getRatings(config('constant.PURCHASE_RATING.good')),

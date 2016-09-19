@@ -71,6 +71,11 @@ class Item extends Model
     {
         return $this->hasOne('App\Brand', 'id', 'brand_id');
     }
+    
+    public function offers()
+    {
+        return $this->hasMany('App\Offer');
+    }
 
     public function getLikeCountAttribute()
     {

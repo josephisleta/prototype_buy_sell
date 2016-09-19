@@ -89,6 +89,11 @@ class User extends Authenticatable
     {
         return $this->hasMany('App\UserDebit');
     }
+    
+    public function offers()
+    {
+        return $this->hasMany('App\Offer');
+    }
 
     public function getFullNameAttribute()
     {

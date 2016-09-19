@@ -492,4 +492,38 @@ class ItemController extends Controller
 
         return response()->json($data);
     }
+
+    public function offer()
+    {
+        $error = [];
+        if (!$this->request->item_id) $error[] = 'Item id is required';
+        if (!$this->request->value) $error[] = 'Value is required';
+
+        if ($this->request->item_id) {
+            $item = Item::find($this->request->item_id);
+            if (!$item) $error[] = 'Item id is invalid';
+        }
+
+        if ($error) {
+            return response()->json([
+                'success' => false,
+                'error' => $error,
+                'user' => $this->user->getReturn()
+            ]);
+        }
+
+        $this->user->offers()->create([
+            'item_id' => $item->id,
+            'value' => $this->request->value
+        ]);
+
+        $data = [
+            'success' => true,
+            'item'    => $item->getReturn(),
+            'error'   => [],
+            'user'    => $this->user->getReturn()
+        ];
+
+        return response()->json($data);
+    }
 }

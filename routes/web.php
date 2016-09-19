@@ -46,4 +46,5 @@ Route::group(['middleware' => 'user'], function () {
     // No specs yet
     Route::get('/item/buy',           ['as' => 'item_buy',           'uses' => 'ItemController@buy']);
     Route::get('/item/buy/rate',      ['as' => 'item_rate_purchase', 'uses' => 'ItemController@ratePurchase']);
+    Route::get('/item/offer',         ['as' => 'item_offer',         'uses' => 'ItemController@offer']);
 });
